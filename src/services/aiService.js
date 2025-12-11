@@ -2,16 +2,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
-// ✅ CORRECTED MODEL NAMES
+// ✅ UPDATED MODEL NAMES (based on your available models)
 const MODELS = [
-  'gemini-2.0-flash',           // Latest stable flash
-  'gemini-1.5-flash-latest',    // Fallback flash
-  'gemini-1.5-pro-latest',      // Pro fallback
-  'gemini-pro',                 // Legacy fallback
+  'gemini-2.5-flash',           // Latest and best
+  'gemini-2.0-flash',           // Stable fallback
+  'gemini-flash-latest',        // Auto-updates to latest
+  'gemini-2.0-flash-lite',      // Lighter, faster fallback
 ];
 
 const MAX_RETRIES = 3;
-const BASE_DELAY = 1500; // Slightly longer initial delay
+const BASE_DELAY = 1500;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -29,6 +29,11 @@ const isRetryableError = (error) => {
 const isModelNotFoundError = (error) => {
   const message = error.message || '';
   return message.includes('404') || message.includes('not found');
+};
+
+const isAPIKeyError = (error) => {
+  const message = error.message || '';
+  return message.includes('API key expired') || message.includes('API_KEY_INVALID');
 };
 
 export const generateContent = async ({ prompt, tone, length }) => {
@@ -63,13 +68,18 @@ export const generateContent = async ({ prompt, tone, length }) => {
         lastError = error;
         console.warn(`⚠️ Attempt ${attempt}/${MAX_RETRIES} failed for ${modelName}:`, error.message);
 
-        // If model not found, skip to next model immediately (no retry)
+        // API key expired - no point retrying other models
+        if (isAPIKeyError(error)) {
+          throw new Error('⚠️ Your API key has expired. Get a new one at: https://aistudio.google.com/app/apikey');
+        }
+
+        // Model not found - skip to next model
         if (isModelNotFoundError(error)) {
           console.log(`🚫 Model ${modelName} not available, trying next...`);
           break;
         }
 
-        // If retryable and attempts left, wait and retry
+        // Retryable error - wait and retry
         if (isRetryableError(error) && attempt < MAX_RETRIES) {
           const delay = BASE_DELAY * Math.pow(2, attempt - 1);
           console.log(`⏳ Waiting ${delay}ms before retry...`);
@@ -77,7 +87,6 @@ export const generateContent = async ({ prompt, tone, length }) => {
           continue;
         }
 
-        // Otherwise, try next model
         break;
       }
     }
@@ -87,10 +96,6 @@ export const generateContent = async ({ prompt, tone, length }) => {
 
   if (isRetryableError(lastError)) {
     throw new Error('All AI models are currently busy. Please wait a minute and try again.');
-  }
-
-  if (isModelNotFoundError(lastError)) {
-    throw new Error('No available AI models found. Please check your API key permissions.');
   }
 
   throw new Error('Failed to generate content. Please try again.');
