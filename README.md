@@ -6,23 +6,24 @@ A premium, modern web application for generating high-quality text content using
 
 ## 🚀 Features
 
--   **AI-Powered Generation**: Leverages Google's `gemini-1.5-flash` model for fast, relevant content.
--   **Premium Design**: Dark mode aesthetic with glassmorphism, gradients, and smooth animations.
--   **Customizable**: Adjust tone (Professional, Casual, Witty) and length (Short, Medium, Long).
--   **Responsive**: Fully optimized for desktop, tablet, and mobile devices.
--   **Developer Experience**: Built on Vite for lightning-fast HMR and builds.
+- **AI-Powered Generation**: Leverages Google's `gemini-2.5-flash` model for fast, relevant content.
+- **Premium Design**: Dark mode aesthetic with glassmorphism, gradients, and smooth animations.
+- **Customizable**: Adjust tone (Professional, Casual, Witty) and length (Short, Medium, Long).
+- **Responsive**: Fully optimized for desktop, tablet, and mobile devices.
+- **Developer Experience**: Built on Vite for lightning-fast HMR and builds.
 
 ## 🛠️ Tech Stack
 
--   **Frontend**: React (v18+)
--   **Build Tool**: Vite
--   **Styling**: Vanilla CSS (Variables, Grid/Flexbox)
--   **AI Integration**: `@google/generative-ai` SDK
--   **Fonts**: Inter & Outfit (Google Fonts)
+- **Frontend**: React (v18+)
+- **Build Tool**: Vite
+- **Styling**: Vanilla CSS (Variables, Grid/Flexbox)
+- **AI Integration**: `@google/generative-ai` SDK
+- **Fonts**: Inter & Outfit (Google Fonts)
 
 ## ⚙️ Installation
 
 1.  **Clone the repository**:
+
     ```bash
     git clone https://github.com/yourusername/ai-content-generator.git
     cd ai-content-generator
@@ -45,6 +46,7 @@ To use the AI features, you need a Google Gemini API key.
     ```
 3.  **Add your Key**:
     Add the following line to `.env`:
+
     ```env
     VITE_GOOGLE_API_KEY=your_actual_api_key_here
     ```
