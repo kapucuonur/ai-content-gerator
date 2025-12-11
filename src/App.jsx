@@ -16,7 +16,7 @@ function App() {
       setContent(result);
     } catch (error) {
       console.error('Error generating content:', error);
-      setContent('Sorry, something went wrong. Please try again.');
+      setContent(`⚠️ ${error.message}`);
     } finally {
       setIsLoading(false);
     }
