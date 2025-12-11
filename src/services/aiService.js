@@ -2,21 +2,19 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
-// Model configuration with fallbacks
+// ✅ CORRECTED MODEL NAMES
 const MODELS = [
-  'gemini-2.5-flash',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro'
+  'gemini-2.0-flash',           // Latest stable flash
+  'gemini-1.5-flash-latest',    // Fallback flash
+  'gemini-1.5-pro-latest',      // Pro fallback
+  'gemini-pro',                 // Legacy fallback
 ];
 
-// Retry configuration
 const MAX_RETRIES = 3;
-const BASE_DELAY = 1000; // 1 second
+const BASE_DELAY = 1500; // Slightly longer initial delay
 
-// Helper: Sleep function for delays
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Helper: Check if error is retryable (503, 429, etc.)
 const isRetryableError = (error) => {
   const message = error.message || '';
   return (
@@ -28,7 +26,11 @@ const isRetryableError = (error) => {
   );
 };
 
-// Main generation function with retry logic
+const isModelNotFoundError = (error) => {
+  const message = error.message || '';
+  return message.includes('404') || message.includes('not found');
+};
+
 export const generateContent = async ({ prompt, tone, length }) => {
   if (!API_KEY) {
     throw new Error('API Key is missing. Please check your .env file.');
@@ -45,47 +47,51 @@ export const generateContent = async ({ prompt, tone, length }) => {
 
   let lastError;
 
-  // Try each model
   for (const modelName of MODELS) {
-    console.log(`Trying model: ${modelName}`);
-    
-    // Retry logic for each model
+    console.log(`🔄 Trying model: ${modelName}`);
+
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         const model = genAI.getGenerativeModel({ model: modelName });
         const result = await model.generateContent(fullPrompt);
         const response = await result.response;
-        
+
         console.log(`✅ Success with ${modelName} on attempt ${attempt}`);
         return response.text();
 
       } catch (error) {
         lastError = error;
-        console.warn(`Attempt ${attempt}/${MAX_RETRIES} failed for ${modelName}:`, error.message);
+        console.warn(`⚠️ Attempt ${attempt}/${MAX_RETRIES} failed for ${modelName}:`, error.message);
 
-        // If it's a retryable error and we have attempts left
+        // If model not found, skip to next model immediately (no retry)
+        if (isModelNotFoundError(error)) {
+          console.log(`🚫 Model ${modelName} not available, trying next...`);
+          break;
+        }
+
+        // If retryable and attempts left, wait and retry
         if (isRetryableError(error) && attempt < MAX_RETRIES) {
-          const delay = BASE_DELAY * Math.pow(2, attempt - 1); // Exponential backoff
+          const delay = BASE_DELAY * Math.pow(2, attempt - 1);
           console.log(`⏳ Waiting ${delay}ms before retry...`);
           await sleep(delay);
           continue;
         }
 
-        // If not retryable or out of retries, try next model
+        // Otherwise, try next model
         break;
       }
     }
-    
-    console.log(`❌ All retries failed for ${modelName}, trying next model...`);
   }
 
-  // All models and retries failed
-  console.error('All models failed:', lastError);
-  
-  // Return user-friendly error message
+  console.error('❌ All models failed:', lastError);
+
   if (isRetryableError(lastError)) {
-    throw new Error('All AI models are currently busy. Please wait a moment and try again.');
+    throw new Error('All AI models are currently busy. Please wait a minute and try again.');
   }
-  
+
+  if (isModelNotFoundError(lastError)) {
+    throw new Error('No available AI models found. Please check your API key permissions.');
+  }
+
   throw new Error('Failed to generate content. Please try again.');
 };
